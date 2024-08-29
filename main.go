@@ -28,10 +28,18 @@ func main() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
+	var records []record
+	var tmp record
+	var cancel bool
+	cancel = false
 	updates := bot.GetUpdatesChan(u)
-	loc, _ := time.LoadLocation("Local")
 	for update := range updates {
-
+		for _, rec := range records {
+			if rec.timer < time.Now().Unix() {
+				rec.chat_id.Text = rec.reminder
+				bot.Send(rec.chat_id)
+			}
+		}
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 		if update.Message == nil { // ignore any non-Message updates
 			continue
@@ -48,16 +56,19 @@ func main() {
 		switch update.Message.Command() {
 		case "help":
 			msg.Text = "To initiate timer use /new_timer"
-		case "sayhi":
-			msg.Text = "Hi :)"
-		case "status":
-			msg.Text = "I'm ok."
+			if _, err := bot.Send(msg); err != nil {
+				log.Panic(err)
+			}
+		case "new_timer":
+			tmp, cancel = new_timer(update, msg, u, updates, bot)
+			if !cancel {
+				records = append(records, tmp)
+			}
 		default:
 			msg.Text = "I don't know that command"
-		}
-
-		if _, err := bot.Send(msg); err != nil {
-			log.Panic(err)
+			if _, err := bot.Send(msg); err != nil {
+				log.Panic(err)
+			}
 		}
 	}
 }
