@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -17,7 +16,7 @@ type record struct {
 }
 
 func main() {
-	bot, err := tgbotapi.NewBotAPI(os.Getenv("7212937598:AAFbYryUxv8iw0fWaOEgRd-te-WJpOIKaF8"))
+	bot, err := tgbotapi.NewBotAPI("7212937598:AAFbYryUxv8iw0fWaOEgRd-te-WJpOIKaF8")
 	if err != nil {
 		log.Panic(err)
 	}
