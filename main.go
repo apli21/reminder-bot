@@ -8,6 +8,14 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+type user_data struct {
+	status   int
+	chat_id  int64
+	reminder string
+	loc      *time.Location
+	timer    int64
+}
+
 type record struct {
 	reminder string
 	loc      *time.Location
@@ -20,6 +28,8 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	var users_data = make(map[int64]user_data)
 
 	bot.Debug = true
 	log.Printf("Authorized on account %s", bot.Self.UserName)
@@ -39,35 +49,24 @@ func main() {
 				bot.Send(rec.chat_id)
 			}
 		}
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
-		if update.Message == nil { // ignore any non-Message updates
+		if update.Message == nil { //пустые обновления игнорируем
 			continue
 		}
-		if !update.Message.IsCommand() { // ignore any non-command Messages
-			msg.Text = "If you do not know how to use this cursed abomination, use /help command"
-			continue
-		}
+		if update.Message.IsCommand() { //это команда?
+			switch update.Message.Command() {
+			case "help":
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "To create new timer, use /new_timer command"))
 
-		// Create a new MessageConfig. We don't have text yet,
-		// so we leave it empty.
+			case "new_timer": //создаём новый таймер, статус пользователя переводим на один- 0 я зарезервировал для пользователя который ещё ничего не делает
+				tmp_loc, _ := time.LoadLocation("Local")
+				users_data[update.Message.Chat.ID] = user_data{1, update.Message.Chat.ID, "", tmp_loc, 0}
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "First- what do i need to remind you about?"))
 
-		// Extract the command from the Message.
-		switch update.Message.Command() {
-		case "help":
-			msg.Text = "To initiate timer use /new_timer"
-			if _, err := bot.Send(msg); err != nil {
-				log.Panic(err)
+			default:
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Fine, i'll tell you how to use this abomination - to create new timer, use /new_timer command. And next time you need help, use /help command, will you?"))
 			}
-		case "new_timer":
-			tmp, cancel = new_timer(update, msg, u, updates, bot)
-			if !cancel {
-				records = append(records, tmp)
-			}
-		default:
-			msg.Text = "I don't know that command"
-			if _, err := bot.Send(msg); err != nil {
-				log.Panic(err)
-			}
+		} else {
+
 		}
 	}
 }
@@ -101,10 +100,11 @@ func new_timer(update tgbotapi.Update, msg tgbotapi.MessageConfig, u tgbotapi.Up
 	}
 	tmp.reminder = message
 	msg.Text = "Next, date of reminder- when do i need to send you a reminder? Please, write it in format dd:mm:yyyy hh:mm:ss, unless you want to break this bot"
+	bot.Send(msg)
 	correct = false
 	update = <-updates
 	for !correct {
-		if !update.Message.IsCommand() || update.Message == nil {
+		if update.Message.IsCommand() || update.Message == nil {
 			msg.Text = "Incorrect format"
 			bot.Send(msg)
 			update = <-updates
