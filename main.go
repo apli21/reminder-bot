@@ -73,7 +73,9 @@ func main() {
 						tmp.chat_id = tgbotapi.NewMessage(update.Message.Chat.ID, " ")
 						tmp.loc = users_data[update.Message.Chat.ID].loc
 						tmp.reminder = users_data[update.Message.Chat.ID].reminder
-						tmp.timer = tmp_time.Unix() - time.Now().Unix()
+						tmp.timer = tmp_time.Unix()
+						log.Println(tmp.timer)
+						log.Println(time.Now().Unix())
 						*records = append(*records, tmp)
 						delete(users_data, update.Message.Chat.ID)
 					}
