@@ -37,10 +37,9 @@ func main() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	var records []record
 	var tmp record
-	var cancel bool
-	cancel = false
+	var records []record
+	var tmp_time time.Time
 	updates := bot.GetUpdatesChan(u)
 	for update := range updates {
 		for _, rec := range records {
@@ -65,8 +64,27 @@ func main() {
 			default:
 				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Fine, i'll tell you how to use this abomination - to create new timer, use /new_timer command. And next time you need help, use /help command, will you?"))
 			}
-		} else {
-
+		} else if update.Message.Text != "" { //если это текстовое сообщение
+			if users_data[update.Message.Chat.ID].status == 1 { // если пользователь начал создание таймера, то его текстовое сообщение- напоминание
+				users_data[update.Message.Chat.ID] = user_data{2, users_data[update.Message.Chat.ID].chat_id, update.Message.Text, users_data[update.Message.Chat.ID].loc, 0}
+				//дальше, запрашиваем дату и время для напоминания
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Now, date of reminder in format dd:mm:yyyy hh:mm:ss. Or you can enter in incorrect foemat and break it, if you wish"))
+			}
+			if users_data[update.Message.Chat.ID].status == 2 { //если пользователь на этапе отправки даты
+				tmp_time, _ = time.ParseInLocation("02:01:2006 15:04:05", update.Message.Text, users_data[update.Message.Chat.ID].loc)
+				if tmp_time.Year() == 0001 { //проверяем, правильно ли введена дата, и дата ли это вообще
+					bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Uh, you either wrote in incorrect format, or you didn't input date at all"))
+				} else { //если всё верно, добавляем новый таймер в записи
+					tmp.chat_id = tgbotapi.NewMessage(update.Message.Chat.ID, " ")
+					tmp.loc = users_data[update.Message.Chat.ID].loc
+					tmp.reminder = users_data[update.Message.Chat.ID].reminder
+					tmp.timer = tmp_time.Unix() - time.Now().Unix()
+					records = append(records, tmp)
+					users_data[update.Message.Chat.ID] = user_data{0, update.Message.Chat.ID, "", users_data[update.Message.Chat.ID].loc, 0}
+				}
+			}
+		} else { //в любом другом случае, пишем пользователю напоминание о том как пользоваться этой штукой
+			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "To use this cursed abomination, use /new_timer command"))
 		}
 	}
 }
