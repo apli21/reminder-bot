@@ -63,7 +63,7 @@ func main() {
 			if users_data[update.Message.Chat.ID].status == 1 { // если пользователь начал создание таймера, то его текстовое сообщение- напоминание
 				users_data[update.Message.Chat.ID] = user_data{2, users_data[update.Message.Chat.ID].chat_id, update.Message.Text, users_data[update.Message.Chat.ID].loc, 0}
 				//дальше, запрашиваем дату и время для напоминания
-				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Now, date of reminder in format dd:mm:yyyy hh:mm:ss. Or you can enter in incorrect foemat and break it, if you wish"))
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Now, date of reminder in format dd:mm:yyyy hh:mm:ss. Or you can enter in incorrect format and break it, if you wish"))
 			} else {
 				if users_data[update.Message.Chat.ID].status == 2 { //если пользователь на этапе отправки даты
 					tmp_time, _ = time.ParseInLocation("02:01:2006 15:04:05", strings.TrimSpace(update.Message.Text), users_data[update.Message.Chat.ID].loc)
